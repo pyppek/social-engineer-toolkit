@@ -196,6 +196,8 @@ if option1 != "99":
             setprompt(["1"], "From address (ex: moo@example.com)"))
         from_displayname = input(
             setprompt(["1"], "The FROM NAME the user will see"))
+        reply_to_address = input(
+            setprompt(["1"], "Reply-To address"))
         if sendmail == 0:
             # Ask for a username and password if we aren't using sendmail
             provideruser = input(
@@ -324,12 +326,14 @@ if option1 != "99":
         pass
 
 
-def mail(to, subject, prioflag1, prioflag2, text):
+def mail(to, subject, prioflag1, prioflag2, text, reply_to_address=from_address):
 
     msg = MIMEMultipart()
     msg['From'] = str(
         Header(from_displayname, 'UTF-8').encode() + ' <' + from_address + '> ')
     msg['To'] = to
+    msg['Reply-To'] = str(
+        Header(from_displayname, 'UTF-8').encode() + ' <' + reply_to_address + '> ')
     msg['X-Priority'] = prioflag1
     msg['X-MSMail-Priority'] = prioflag2
     msg['Subject'] = Header(subject, 'UTF-8').encode()
@@ -406,7 +410,7 @@ if option1 == '1':
         body_new = body_new.replace("INSERTUSERHERE", base64.b64encode(to))
     # call the function to send email
     try:
-        mail(to, subject, prioflag1, prioflag2, body_new)
+        mail(to, subject, prioflag1, prioflag2, body_new, reply_to_address)
     except socket.error:
         print_error(
             "Unable to establish a connection with the SMTP server. Try again.")
