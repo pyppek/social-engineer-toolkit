@@ -243,87 +243,100 @@ if option1 != "99":
             break
 
     subject = input(setprompt(["1"], "Email subject"))
-    try:
-        html_flag = input(
-            setprompt(["1"], "Send the message as html or plain? 'h' or 'p' [p]"))
+    istemplate = input(setprompt(['1'], 'Use email template? [y/n] '))
+    if istemplate.lower() == 'y' or istemplate.lower() == 'yes':
+        template = input(setprompt(['1'], 'Template name: '))
+        template_path = 'src/phishing/smtp/client/templates/' + template.strip()
+        try:
+            body = ''
+            with open(template_path, 'r') as f:
+                lines = f.readlines()
+                for line in lines:
+                    body += line
+        except:
+            print('No valid template')
+    else:
+        try:
+            html_flag = input(
+                setprompt(["1"], "Send the message as html or plain? 'h' or 'p' [p]"))
 
-        # if we are specifying plain or defaulting to plain
-        if html_flag == "" or html_flag == "p":
-            message_flag = "plain"
-        # if we are specifying html
-        if html_flag == "h":
-            message_flag = "html"
-        # start the body off blank
-        body = ""
-        # Here we start to check if we want to track users when they click
-        # essentially if this flag is turned on, a quick search and replace
-        # occurs via base64 encoding on the user name. that is then added
-        # during the def mail function call and the username is posted as
-        # part of the URL. When we check the users, they can be coorelated
-        # back to the individual user when they click the link.
+            # if we are specifying plain or defaulting to plain
+            if html_flag == "" or html_flag == "p":
+                message_flag = "plain"
+            # if we are specifying html
+            if html_flag == "h":
+                message_flag = "html"
+            # start the body off blank
+            body = ""
+            # Here we start to check if we want to track users when they click
+            # essentially if this flag is turned on, a quick search and replace
+            # occurs via base64 encoding on the user name. that is then added
+            # during the def mail function call and the username is posted as
+            # part of the URL. When we check the users, they can be coorelated
+            # back to the individual user when they click the link.
 
-        # track email is pulled dynamically from the config as
-        # TRACK_EMAIL_ADDRESSES
-        if track_email.lower() == "on":
-            print(
-                "You have specified to track user email accounts when they are sent. In")
-            print(
-                "order for this to work, you will need to specify the URL within the body")
-            print(
-                "of the email and where you would like to inject the base64 encoded name.")
-            print(
-                "\nWhen a user clicks on the link, the URL Will post back to SET and track")
-            print(
-                "each of the users clicks and who the user was. As an example, say my SET")
-            print(
-                "website is hosted at http://www.trustedsec.com/index.php and I want to track users.")
-            print("I would type below " + bcolors.BOLD +
-                  "http://www.trustedsec.com/index.php?INSERTUSERHERE" + bcolors.ENDC + ". Note that in")
-            print(
-                "order for SET to work, you will need to specify index.php?INSERTUSERHERE. That is the")
-            print(
-                "keyword that SET uses in order to replace the base name with the URL.")
-            print("\nInsert the FULL url and the " + bcolors.BOLD + "INSERTUSERHERE" + bcolors.ENDC +
-                  "on where you want to insert the base64 name.\n\nNOTE: You must have a index.php and a ? mark seperating the user. YOU MUST USE PHP!")
-            print(
-                "\nNote that the actual URL does NOT need to contain index.php but has to be named that for the php code in Apache to work.")
-        print_warning(
-            "IMPORTANT: When finished, type END (all capital) then hit {return} on a new line.")
-        body = input(setprompt(
-            ["1"], "Enter the body of the message, type END (capitals) when finished"))
+            # track email is pulled dynamically from the config as
+            # TRACK_EMAIL_ADDRESSES
+            if track_email.lower() == "on":
+                print(
+                    "You have specified to track user email accounts when they are sent. In")
+                print(
+                    "order for this to work, you will need to specify the URL within the body")
+                print(
+                    "of the email and where you would like to inject the base64 encoded name.")
+                print(
+                    "\nWhen a user clicks on the link, the URL Will post back to SET and track")
+                print(
+                    "each of the users clicks and who the user was. As an example, say my SET")
+                print(
+                    "website is hosted at http://www.trustedsec.com/index.php and I want to track users.")
+                print("I would type below " + bcolors.BOLD +
+                      "http://www.trustedsec.com/index.php?INSERTUSERHERE" + bcolors.ENDC + ". Note that in")
+                print(
+                    "order for SET to work, you will need to specify index.php?INSERTUSERHERE. That is the")
+                print(
+                    "keyword that SET uses in order to replace the base name with the URL.")
+                print("\nInsert the FULL url and the " + bcolors.BOLD + "INSERTUSERHERE" + bcolors.ENDC +
+                      "on where you want to insert the base64 name.\n\nNOTE: You must have a index.php and a ? mark seperating the user. YOU MUST USE PHP!")
+                print(
+                    "\nNote that the actual URL does NOT need to contain index.php but has to be named that for the php code in Apache to work.")
+            print_warning(
+                "IMPORTANT: When finished, type END (all capital) then hit {return} on a new line.")
+            body = input(setprompt(
+                ["1"], "Enter the body of the message, type END (capitals) when finished"))
 
-        # loop through until they are finished with the body of the subject
-        # line
-        while body != 'exit':
-            try:
+            # loop through until they are finished with the body of the subject
+            # line
+            while body != 'exit':
+                try:
 
-                body += ("\n")
-                body_1 = input("Next line of the body: ")
-                if body_1 == "END":
+                    body += ("\n")
+                    body_1 = input("Next line of the body: ")
+                    if body_1 == "END":
+                        break
+                    else:
+                        body = body + body_1
+
+                # except KeyboardInterrupts (control-c) and pass through.
+                except KeyboardInterrupt:
                     break
-                else:
-                    body = body + body_1
 
-            # except KeyboardInterrupts (control-c) and pass through.
-            except KeyboardInterrupt:
-                break
+            # if we are tracking emails, this is some cleanup and detection to see
+            # if they entered .html instead or didn't specify insertuserhere
+            if track_email.lower() == "on":
+                # here we replace url with .php if they made a mistake
+                body = body.replace(".html", ".php")
+                if not "?INSERTUSERHERE" in body:
+                    print_error(
+                        "You have track email to on however did not specify ?INSERTUSERHERE.")
+                    print_error(
+                        "Tracking of users will not work and is disabled. Please re-read the instructions.")
+                    pause = input(
+                        "Press {" + bcolors.BOLD + "return" + bcolors.ENDC + "} to continue.")
 
-        # if we are tracking emails, this is some cleanup and detection to see
-        # if they entered .html instead or didn't specify insertuserhere
-        if track_email.lower() == "on":
-            # here we replace url with .php if they made a mistake
-            body = body.replace(".html", ".php")
-            if not "?INSERTUSERHERE" in body:
-                print_error(
-                    "You have track email to on however did not specify ?INSERTUSERHERE.")
-                print_error(
-                    "Tracking of users will not work and is disabled. Please re-read the instructions.")
-                pause = input(
-                    "Press {" + bcolors.BOLD + "return" + bcolors.ENDC + "} to continue.")
-
-    # except KeyboardInterrupts (control-c) and pass through.
-    except KeyboardInterrupt:
-        pass
+        # except KeyboardInterrupts (control-c) and pass through.
+        except KeyboardInterrupt:
+            pass
 
 
 def mail(to, subject, prioflag1, prioflag2, text, reply_to_address=from_address):
@@ -399,6 +412,22 @@ def mail(to, subject, prioflag1, prioflag2, text, reply_to_address=from_address)
 
     if sendmail == 1:
         mailServer.sendmail(from_address, to, io.getvalue())
+
+
+# add an email footer
+isfooter = input(setprompt(['1'], 'Add an email footer? [y/n] '))
+if isfooter.lower() == 'y' or isfooter.lower() == 'yes':
+    footer = input(setprompt(['1'], "footer's name: "))
+    footer_path = 'src/phishing/smtp/client/footers/' + footer.strip()
+    try:
+        with open(footer_path, 'r') as f:
+            lines = f.readlines()
+            for line in lines:
+                body += line
+            print(body)
+    except:
+        print('No valid footer')
+
 
 # if we specified a single address
 if option1 == '1':
